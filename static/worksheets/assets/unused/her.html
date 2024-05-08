@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Browser</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #121212;
+      color: #fff;
+    }
+    #top-bar {
+      display: flex;
+      align-items: center;
+      background-color: #1f1f1f;
+      padding: 8px;
+    }
+    #tabs {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-grow: 1;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 16px;
+      cursor: pointer;
+      border: none;
+      background-color: inherit;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Add this line to horizontally center the content */
+    }
+    .tab.active {
+      border-bottom: 2px solid #0078d4;
+    }
+    .search-bar {
+      flex-grow: 1;
+      padding: 8px;
+      border: none;
+      background-color: #000;
+      color: #fff;
+    }
+    .search-bar:focus {
+      outline: none;
+    }
+    #add-tab-btn,
+    #delete-tab-btn,
+    #go-btn {
+      background-color: #0078d4;
+      color: #fff;
+      padding: 8px 16px;
+      border: none;
+      cursor: pointer;
+    }
+    #add-tab-btn {
+      margin-right: 8px;
+    }
+    .iframe-container {
+      display: none;
+    }
+    .iframe-container.active {
+      display: block;
+    }
+    .tab .tab-title {
+      margin-right: 8px;
+    }
+    .tab .tab-favicon {
+      height: 16px;
+      width: 16px;
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="top-bar">
+    <ul id="tabs"></ul>
+    <button id="add-tab-btn" onclick="createTab()">New Tab</button>
+    <button id="delete-tab-btn" onclick="deleteTab()">Delete Tab</button>
+    <div style="flex-grow: 1;"></div>
+    <input class="search-bar" type="text" placeholder="Enter URL or search term">
+    <button id="go-btn" onclick="goToURL()">Go</button>
+    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  </div>
+  <div id="iframes-container"></div>
+
+  <script>
+    let tabs = [];
+    let currentTab = 0;
+    let tabIdCounter = 0;
+
+    function createTab() {
+      const newTab = {
+        id: tabIdCounter++,
+        url: '',
+        title: '',
+        favicon: '',
+      };
+      tabs.push(newTab);
+      updateTabs();
+      switchTab(newTab.id);
+    }
+
+    function deleteTab() {
+      if (tabs.length === 1) return; // Prevent deleting the last tab
+      tabs.splice(currentTab, 1);
+      updateTabs();
+      if (currentTab >= tabs.length) {
+        currentTab = tabs.length - 1;
+      }
+      switchTab(currentTab);
+    }
+
+    function switchTab(id) {
+      currentTab = id;
+      updateTabs();
+      updateIframes();
+      updateSearchBar(); // Call the function to update the search bar with the current URL
+    }
+
+    function updateTabs() {
+      const tabsContainer = document.getElementById('tabs');
+      tabsContainer.innerHTML = '';
+      tabs.forEach((tab) => {
+        const tabItem = document.createElement('button');
+        const tabTitle = document.createElement('span');
+        const tabFavicon = document.createElement('img');
+        tabItem.className = 'tab';
+        if (tab.id === currentTab) {
+          tabItem.classList.add('active');
+        }
+        tabTitle.className = 'tab-title';
+        tabTitle.textContent = tab.title || 'Tab ' + (tab.id + 1);
+        tabFavicon.className = 'tab-favicon';
+        tabFavicon.src = tab.favicon;
+        tabItem.appendChild(tabFavicon);
+        tabItem.appendChild(tabTitle);
+        tabItem.onclick = () => switchTab(tab.id);
+        tabsContainer.appendChild(tabItem);
+      });
+    }
+
+    function updateIframes() {
+      const iframesContainer = document.getElementById('iframes-container');
+      iframesContainer.innerHTML = '';
+      tabs.forEach((tab) => {
+        const iframeContainer = document.createElement('div');
+        iframeContainer.className = 'iframe-container';
+        iframeContainer.classList.toggle('active', tab.id === currentTab);
+
+        const iframe = document.createElement('iframe');
+        iframe.src = tab.url;
+        iframe.addEventListener('load', function () {
+          // When the content inside the iframe is loaded, update tab title and favicon
+          tab.title = iframe.contentDocument.title;
+          const faviconLink = iframe.contentDocument.querySelector("link[rel='icon']");
+          tab.favicon = faviconLink ? faviconLink.href : '';
+          updateTabs(); // Update the tabs to show the new tab title and favicon
+        });
+
+        iframeContainer.appendChild(iframe);
+        iframesContainer.appendChild(iframeContainer);
+      });
+    }
+
+    function updateSearchBar() {
+      const searchBar = document.querySelector('.search-bar');
+      searchBar.value = tabs[currentTab].url;
+    }
+
+    function goToURL() {
+      const searchBar = document.querySelector('.search-bar');
+      tabs[currentTab].url = searchBar.value;
+      updateIframes();
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+    }
+
+    createTab(); // Create an initial tab when the page loads
+  </script>
+</body>
+</html>
